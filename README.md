@@ -116,6 +116,12 @@ The demo profile still requires `JWT_SECRET`. `MONGODB_URI` and `OPENAI_API_KEY`
 2. Start the dev server: `npm run dev`
 3. Build for production: `npm run build`
 
+## Deploying the Frontend to Vercel
+
+Import this GitHub repository in Vercel and set the project root directory to `frontend`. Vercel will use `npm run build` and `dist` as the output directory; `frontend/vercel.json` rewrites client-side routes for React Router.
+
+Set the `VITE_API_BASE_URL` environment variable in the Vercel project to the publicly reachable backend API URL, including `/api` (for example, `https://your-backend.example.com/api`), then redeploy. The backend must also allow requests from the deployed Vercel origin in its CORS configuration. Without a deployed backend URL, API-backed features will not work from the deployed frontend.
+
 ## Verification
 
 - Backend tests: `cd backend` then `mvn test`
