@@ -29,7 +29,7 @@ export default function AIAssistantPage() {
       const history = messages.slice(-10).map(({ role, text }) => ({ role, content: text }));
       const { data } = await chatWithAssistant(message, history);
       if (data.mode === 'BUILT_IN') {
-        setError('The external AI provider is not configured. Replies are limited to built-in coaching; set OPENAI_API_KEY on the backend for adaptive answers.');
+        setError('Groq is not configured. Replies are limited to built-in coaching; set GROQ_API_KEY on the backend for adaptive answers.');
       }
       setMessages((current) => [...current, { role: 'assistant', text: data.reply }]);
       requestAnimationFrame(() => {
@@ -89,7 +89,7 @@ export default function AIAssistantPage() {
           </div>
         )}
 
-        {error && <p className={`alert ${error.startsWith('The external AI provider') ? 'info' : 'error'}`} role={error.startsWith('The external AI provider') ? 'status' : 'alert'}>{error}</p>}
+        {error && <p className={`alert ${error.startsWith('Groq is not configured') ? 'info' : 'error'}`} role={error.startsWith('Groq is not configured') ? 'status' : 'alert'}>{error}</p>}
 
         <form className="assistant-composer" onSubmit={(event) => { event.preventDefault(); sendMessage(); }}>
           <label className="sr-only" htmlFor="assistant-message">Ask your assistant</label>
@@ -105,7 +105,7 @@ export default function AIAssistantPage() {
           <button className="primary-btn" type="submit" disabled={!draft.trim() || sending}>Send</button>
         </form>
         <small className="assistant-disclaimer">
-          When OpenAI is configured, your question, recent chat turns, and a limited summary of extracted resume skills and interview scores are sent for a response. Raw resume text and account identifiers are not included. Without a provider key, the app uses limited built-in coaching logic.
+          When Groq is configured, your question, recent chat turns, and a limited summary of extracted resume skills and interview scores are sent for a response. Raw resume text and account identifiers are not included. Without a provider key, the app uses limited built-in coaching logic.
         </small>
       </section>
     </main>

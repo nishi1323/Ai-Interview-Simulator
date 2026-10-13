@@ -26,7 +26,7 @@ public class AssistantService {
     private final ResumeRepository resumeRepository;
     private final InterviewRepository interviewRepository;
     private final AiService aiService;
-    private final OpenAiAssistantClient openAiAssistantClient;
+    private final GroqAssistantClient groqAssistantClient;
 
     @Transactional(readOnly = true)
     public AssistantChatResponse respond(String email, String message, List<AssistantChatTurn> history) {
@@ -50,8 +50,8 @@ public class AssistantService {
                 .filter(title -> title != null && !title.isBlank())
                 .orElse("Software Engineer");
 
-        if (openAiAssistantClient.isEnabled()) {
-            return new AssistantChatResponse(openAiAssistantClient.generateReply(
+        if (groqAssistantClient.isEnabled()) {
+            return new AssistantChatResponse(groqAssistantClient.generateReply(
                     message,
                     buildCandidateContext(skills, role, latestCompletedInterview, user.getExperienceLevel()),
                     history == null ? List.of() : history), "AI");
@@ -133,7 +133,7 @@ public class AssistantService {
         }
 
         return "I can't give an accurate answer to \"" + message.trim() + "\" because the AI provider is not configured. "
-                + "Set OPENAI_API_KEY on the backend and restart it for adaptive answers. Without a provider, I can only "
+                + "Set GROQ_API_KEY on the backend and restart it for adaptive answers. Without a provider, I can only "
                 + "give limited rule-based guidance about your saved resume, interview scores, and practice plan.";
     }
 

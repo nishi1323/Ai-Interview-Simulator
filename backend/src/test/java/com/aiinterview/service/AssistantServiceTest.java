@@ -29,7 +29,7 @@ class AssistantServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         ResumeRepository resumeRepository = mock(ResumeRepository.class);
         InterviewRepository interviewRepository = mock(InterviewRepository.class);
-        OpenAiAssistantClient openAiAssistantClient = mock(OpenAiAssistantClient.class);
+        GroqAssistantClient groqAssistantClient = mock(GroqAssistantClient.class);
         User user = new User();
         user.setName("Taylor Candidate");
         user.setEmail("taylor@example.test");
@@ -51,10 +51,10 @@ class AssistantServiceTest {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(resumeRepository.findFirstByUserOrderByCreatedAtDesc(user)).thenReturn(Optional.of(resume));
         when(interviewRepository.findByUser(user)).thenReturn(List.of(interview));
-        when(openAiAssistantClient.isEnabled()).thenReturn(false);
+        when(groqAssistantClient.isEnabled()).thenReturn(false);
 
         AssistantService service = new AssistantService(
-                userRepository, resumeRepository, interviewRepository, new AiService(), openAiAssistantClient);
+                userRepository, resumeRepository, interviewRepository, new AiService(), groqAssistantClient);
 
         AssistantChatResponse reply = service.respond(
                 user.getEmail(), "How can I improve my interview score?", List.of());
@@ -65,8 +65,8 @@ class AssistantServiceTest {
                 .contains("76%")
                 .contains("technical (60/100)");
         assertThat(reply.mode()).isEqualTo("BUILT_IN");
-        verify(openAiAssistantClient).isEnabled();
-        verifyNoMoreInteractions(openAiAssistantClient);
+        verify(groqAssistantClient).isEnabled();
+        verifyNoMoreInteractions(groqAssistantClient);
     }
 
     @Test
@@ -74,7 +74,7 @@ class AssistantServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         ResumeRepository resumeRepository = mock(ResumeRepository.class);
         InterviewRepository interviewRepository = mock(InterviewRepository.class);
-        OpenAiAssistantClient openAiAssistantClient = mock(OpenAiAssistantClient.class);
+        GroqAssistantClient groqAssistantClient = mock(GroqAssistantClient.class);
         User user = new User();
         user.setName("Taylor Candidate");
         user.setEmail("taylor@example.test");
@@ -84,18 +84,18 @@ class AssistantServiceTest {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(resumeRepository.findFirstByUserOrderByCreatedAtDesc(user)).thenReturn(Optional.empty());
         when(interviewRepository.findByUser(user)).thenReturn(List.of());
-        when(openAiAssistantClient.isEnabled()).thenReturn(true);
-        when(openAiAssistantClient.generateReply(eq(question), contains("Software Engineer"), eq(history)))
+        when(groqAssistantClient.isEnabled()).thenReturn(true);
+        when(groqAssistantClient.generateReply(eq(question), contains("Software Engineer"), eq(history)))
                 .thenReturn("Here is a Spring Boot example tailored to dependency injection.");
 
         AssistantService service = new AssistantService(
-                userRepository, resumeRepository, interviewRepository, new AiService(), openAiAssistantClient);
+                userRepository, resumeRepository, interviewRepository, new AiService(), groqAssistantClient);
 
         AssistantChatResponse reply = service.respond(user.getEmail(), question, history);
 
         assertThat(reply.reply()).contains("Spring Boot example");
         assertThat(reply.mode()).isEqualTo("AI");
-        verify(openAiAssistantClient).generateReply(eq(question), contains("Software Engineer"), eq(history));
+        verify(groqAssistantClient).generateReply(eq(question), contains("Software Engineer"), eq(history));
     }
 
     @Test
@@ -103,7 +103,7 @@ class AssistantServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         ResumeRepository resumeRepository = mock(ResumeRepository.class);
         InterviewRepository interviewRepository = mock(InterviewRepository.class);
-        OpenAiAssistantClient openAiAssistantClient = mock(OpenAiAssistantClient.class);
+        GroqAssistantClient groqAssistantClient = mock(GroqAssistantClient.class);
         User user = new User();
         user.setName("Taylor Candidate");
         user.setEmail("taylor@example.test");
@@ -112,10 +112,10 @@ class AssistantServiceTest {
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(resumeRepository.findFirstByUserOrderByCreatedAtDesc(user)).thenReturn(Optional.empty());
         when(interviewRepository.findByUser(user)).thenReturn(List.of());
-        when(openAiAssistantClient.isEnabled()).thenReturn(false);
+        when(groqAssistantClient.isEnabled()).thenReturn(false);
 
         AssistantService service = new AssistantService(
-                userRepository, resumeRepository, interviewRepository, new AiService(), openAiAssistantClient);
+                userRepository, resumeRepository, interviewRepository, new AiService(), groqAssistantClient);
 
         AssistantChatResponse reply = service.respond(user.getEmail(), question, List.of());
 

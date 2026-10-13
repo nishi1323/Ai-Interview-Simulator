@@ -95,7 +95,7 @@ For a local demo without installing a database, start the backend with the inclu
 
 `$env:JWT_SECRET="replace-with-a-random-secret-of-at-least-32-characters"; mvn spring-boot:run -Dspring-boot.run.profiles=demo`
 
-The demo profile still requires `JWT_SECRET`. `MONGODB_URI` and `OPENAI_API_KEY` are optional; MongoDB defaults to the local instance and the assistant uses built-in coaching when no OpenAI key is configured.
+The demo profile still requires `JWT_SECRET`. `MONGODB_URI` and `GROQ_API_KEY` are optional; MongoDB defaults to the local instance and the assistant uses built-in coaching when no Groq key is configured.
 
 ## Database Setup
 
@@ -120,7 +120,13 @@ The demo profile still requires `JWT_SECRET`. `MONGODB_URI` and `OPENAI_API_KEY`
 
 Import this GitHub repository in Vercel and set the project root directory to `frontend`. Vercel will use `npm run build` and `dist` as the output directory; `frontend/vercel.json` rewrites client-side routes for React Router.
 
-Set the `VITE_API_BASE_URL` environment variable in the Vercel project to the publicly reachable backend API URL, including `/api` (for example, `https://your-backend.example.com/api`), then redeploy. The backend must also allow requests from the deployed Vercel origin in its CORS configuration. Without a deployed backend URL, API-backed features will not work from the deployed frontend.
+Set the `VITE_API_BASE_URL` environment variable in the Vercel project to the publicly reachable backend API URL, including `/api` (for example, `https://your-backend.example.com/api`), then redeploy. The backend must also allow requests from the deployed Vercel origin in its `CORS_ALLOWED_ORIGINS` environment variable. Without a deployed backend URL, API-backed features will not work from the deployed frontend.
+
+## Deploying the Backend to Render
+
+The Spring Boot backend can be deployed from the repository's `render.yaml` Blueprint and `backend/Dockerfile`. The Render web service requires a PostgreSQL connection (`DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`), a MongoDB Atlas connection string (`MONGODB_URI`), and a generated `JWT_SECRET`. Set `GROQ_API_KEY` only if enabling the external AI assistant. Set `CORS_ALLOWED_ORIGINS` to the deployed frontend origin. The included Blueprint uses Render's free web-service plan; free services can spin down when idle. Create or attach a PostgreSQL database and MongoDB deployment separately, and check their current pricing, storage, and retention limits before use.
+
+After the backend is deployed, set Vercel's `VITE_API_BASE_URL` to `https://<backend-host>/api` and redeploy the frontend. Never put database or AI provider secrets in Vite environment variables.
 
 ## Verification
 
@@ -131,7 +137,7 @@ Set the `VITE_API_BASE_URL` environment variable in the Vercel project to the pu
 
 - Answer scores and resume section extraction are Java heuristic logic, not a connected hosted LLM. Match percentages are skill-overlap ratios, not hiring predictions.
 - Without an OpenAI key, the personalized assistant uses built-in Java coaching rules and the signed-in user's saved profile, latest resume, and completed interview scores locally.
-- To enable adaptive OpenAI-powered assistant replies, set `OPENAI_API_KEY` in the backend process environment (and optionally `OPENAI_MODEL`). The key is only read by the backend; the assistant sends the user's question, recent chat turns, and a limited summary of extracted skills and interview scores, not raw resume text or account identifiers. Without the key, built-in coaching remains available and the UI indicates that replies are limited.
+- To enable adaptive Groq-powered assistant replies, create an API key in the Groq console and set `GROQ_API_KEY` in the backend process environment. The default model is `llama-3.3-70b-versatile`; override it with `GROQ_MODEL` if needed. Keep the key on the backend and never commit it or expose it through a `VITE_` variable. The assistant sends the user's question, recent chat turns, and a limited summary of extracted skills and interview scores, not raw resume text or account identifiers. Without the key, built-in coaching remains available and the UI indicates that replies are limited.
 - PDFBox extracts selectable text only. Scanned-image PDF OCR is not included.
 - Browser speech recognition depends on browser support and microphone permission; manual transcript entry remains available.
 - Coding practice recommends among four JavaScript challenges based on the latest interview's weakest technical/problem-solving dimensions. Tests run in a terminable browser worker; it is not a multi-language judge or hidden-test service.
