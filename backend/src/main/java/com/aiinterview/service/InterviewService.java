@@ -8,15 +8,18 @@ import com.aiinterview.entity.Answer;
 import com.aiinterview.entity.Interview;
 import com.aiinterview.entity.JobRole;
 import com.aiinterview.entity.Question;
+import com.aiinterview.entity.Resume;
 import com.aiinterview.entity.User;
 import com.aiinterview.exception.ResourceNotFoundException;
-import com.aiinterview.dto.AnswerResponse;
 import com.aiinterview.repository.AnswerRepository;
 import com.aiinterview.repository.InterviewRepository;
 import com.aiinterview.repository.JobRoleRepository;
 import com.aiinterview.repository.QuestionRepository;
+import com.aiinterview.repository.ResumeRepository;
 import com.aiinterview.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -25,10 +28,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class InterviewService {
+
+    private static final Logger log = LoggerFactory.getLogger(InterviewService.class);
 
     private final InterviewRepository interviewRepository;
     private final JobRoleRepository jobRoleRepository;
@@ -36,6 +41,35 @@ public class InterviewService {
     private final AnswerRepository answerRepository;
     private final UserRepository userRepository;
     private final AiService aiService;
+    private final ResumeRepository resumeRepository;
+
+    public InterviewService(
+            InterviewRepository interviewRepository,
+            JobRoleRepository jobRoleRepository,
+            QuestionRepository questionRepository,
+            AnswerRepository answerRepository,
+            UserRepository userRepository,
+            AiService aiService) {
+        this(interviewRepository, jobRoleRepository, questionRepository, answerRepository, userRepository, aiService, null);
+    }
+
+    @Autowired
+    public InterviewService(
+            InterviewRepository interviewRepository,
+            JobRoleRepository jobRoleRepository,
+            QuestionRepository questionRepository,
+            AnswerRepository answerRepository,
+            UserRepository userRepository,
+            AiService aiService,
+            @Autowired(required = false) ResumeRepository resumeRepository) {
+        this.interviewRepository = interviewRepository;
+        this.jobRoleRepository = jobRoleRepository;
+        this.questionRepository = questionRepository;
+        this.answerRepository = answerRepository;
+        this.userRepository = userRepository;
+        this.aiService = aiService;
+        this.resumeRepository = resumeRepository;
+    }
 
     @Transactional
     public Interview createInterview(String email, InterviewCreateRequest request) {
@@ -63,11 +97,30 @@ public class InterviewService {
         interview = interviewRepository.save(interview);
 
         List<String> questionBank = questionBank(roleTitle, request.getInterviewType());
+        List<String> aiQuestions = null;
+        if (aiService != null) {
+            try {
+                String resumeText = "";
+                if (resumeRepository != null) {
+                    Optional<Resume> resumeOpt = resumeRepository.findFirstByUserOrderByCreatedAtDesc(user);
+                    if (resumeOpt.isPresent() && resumeOpt.get().getExtractedText() != null) {
+                        resumeText = resumeOpt.get().getExtractedText();
+                    }
+                }
+                aiQuestions = aiService.generateQuestionsForInterview(
+                        roleTitle, request.getInterviewType(), request.getDifficulty(), totalQuestions, resumeText);
+            } catch (Exception ex) {
+                log.debug("AI question generation could not complete: {}. Using question bank.", ex.getMessage());
+            }
+        }
 
         for (int index = 0; index < totalQuestions; index++) {
             Question question = new Question();
             question.setInterview(interview);
-            question.setPrompt(questionBank.get(index % questionBank.size()));
+            String prompt = (aiQuestions != null && index < aiQuestions.size() && !aiQuestions.get(index).isBlank())
+                    ? aiQuestions.get(index)
+                    : questionBank.get(index % questionBank.size());
+            question.setPrompt(prompt);
             question.setType(request.getInterviewType());
             question.setQuestionOrder(index + 1);
             question.setFollowUp(false);
@@ -113,7 +166,7 @@ public class InterviewService {
         answer.setInterview(interview);
         answer.setQuestion(question);
         answer.setText(request.getAnswer());
-        Map<String, Object> evaluation = aiService.evaluateAnswer(request.getAnswer());
+        Map<String, Object> evaluation = aiService.evaluateAnswer(question.getPrompt(), request.getAnswer());
         answer.setScore(((Number) evaluation.get("score")).intValue());
         answer.setTechnicalScore(((Number) evaluation.get("technicalScore")).intValue());
         answer.setCommunicationScore(((Number) evaluation.get("communicationScore")).intValue());
