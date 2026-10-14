@@ -192,7 +192,7 @@ public class AiService {
                     return parsed;
                 }
             } catch (Exception ex) {
-                log.debug("Groq question generation failed: {}. Using fallback.", ex.getMessage());
+                log.warn("Groq question generation failed: {}. Using fallback.", ex.getMessage());
             }
         }
         return generateQuestionDeterministic(jobRole, difficulty);
@@ -237,7 +237,7 @@ public class AiService {
                     }
                 }
             } catch (Exception ex) {
-                log.debug("Groq batch question generation failed: {}. Using fallback bank.", ex.getMessage());
+                log.warn("Groq batch question generation failed: {}. Using fallback bank.", ex.getMessage());
             }
         }
         return Collections.emptyList();
@@ -274,7 +274,7 @@ public class AiService {
             try {
                 return evaluateAnswerWithGroq(questionPrompt, answer);
             } catch (Exception ex) {
-                log.debug("Groq answer evaluation failed: {}. Falling back to deterministic evaluation.", ex.getMessage());
+                log.warn("Groq answer evaluation failed: {}. Falling back to deterministic evaluation.", ex.getMessage());
             }
         }
         return evaluateAnswerDeterministic(questionPrompt, answer);
@@ -325,7 +325,7 @@ public class AiService {
             result.put("weaknesses", parsed.get("weaknesses") instanceof List<?> list ? list : List.of("Add practical examples", "Discuss edge cases"));
             return result;
         } catch (Exception ex) {
-            log.debug("Failed to parse Groq evaluation JSON: {}. Using deterministic score.", clean);
+            log.warn("Failed to parse Groq evaluation JSON: {}. Using deterministic score.", clean);
             return evaluateAnswerDeterministic(questionPrompt, answer);
         }
     }

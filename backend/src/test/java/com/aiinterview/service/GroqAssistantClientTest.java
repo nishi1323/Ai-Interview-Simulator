@@ -27,6 +27,24 @@ class GroqAssistantClientTest {
     }
 
     @Test
+    void resolvesModelsUriCorrectlyRegardlessOfFormat() {
+        assertThat(GroqAssistantClient.resolveModelsUri(null))
+                .isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(GroqAssistantClient.resolveModelsUri(""))
+                .isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(GroqAssistantClient.resolveModelsUri("   "))
+                .isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(GroqAssistantClient.resolveModelsUri("https://api.groq.com/openai/v1"))
+                .isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(GroqAssistantClient.resolveModelsUri("https://api.groq.com/openai/v1/"))
+                .isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(GroqAssistantClient.resolveModelsUri("https://api.groq.com/openai/v1/chat/completions"))
+                .isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(GroqAssistantClient.resolveModelsUri("https://custom-proxy.example.com/v1"))
+                .isEqualTo("https://custom-proxy.example.com/v1/models");
+    }
+
+    @Test
     void disabledWhenApiKeyMissingOrBlank() {
         GroqAssistantClient client1 = new GroqAssistantClient("", "llama-3.3-70b-versatile");
         assertThat(client1.isEnabled()).isFalse();
@@ -44,5 +62,19 @@ class GroqAssistantClientTest {
         GroqAssistantClient client = new GroqAssistantClient("  \"gsk_test_12345\"  ", "llama-3.3-70b-versatile");
         assertThat(client.isEnabled()).isTrue();
         assertThat(client.getChatCompletionsUri()).isEqualTo("https://api.groq.com/openai/v1/chat/completions");
+        assertThat(client.getModelsUri()).isEqualTo("https://api.groq.com/openai/v1/models");
+        assertThat(client.getModel()).isEqualTo("llama-3.3-70b-versatile");
+        assertThat(client.getConfiguredModel()).isEqualTo("llama-3.3-70b-versatile");
+    }
+
+    @Test
+    void supportsActiveModelCustomizationAndFallback() {
+        GroqAssistantClient client = new GroqAssistantClient("gsk_test", "llama-3.3-70b-versatile");
+        assertThat(client.getActiveModel()).isEqualTo("llama-3.3-70b-versatile");
+
+        client.setActiveModel("llama-3.1-8b-instant");
+        assertThat(client.getActiveModel()).isEqualTo("llama-3.1-8b-instant");
+        assertThat(client.getModel()).isEqualTo("llama-3.1-8b-instant");
+        assertThat(client.getConfiguredModel()).isEqualTo("llama-3.3-70b-versatile");
     }
 }
