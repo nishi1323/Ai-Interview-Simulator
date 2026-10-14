@@ -28,6 +28,8 @@ public class AssistantService {
     private final AiService aiService;
     private final GroqAssistantClient groqAssistantClient;
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AssistantService.class);
+
     @Transactional(readOnly = true)
     public AssistantChatResponse respond(String email, String message, List<AssistantChatTurn> history) {
         User user = userRepository.findByEmail(email)
@@ -51,10 +53,14 @@ public class AssistantService {
                 .orElse("Software Engineer");
 
         if (groqAssistantClient.isEnabled()) {
-            return new AssistantChatResponse(groqAssistantClient.generateReply(
-                    message,
-                    buildCandidateContext(skills, role, latestCompletedInterview, user.getExperienceLevel()),
-                    history == null ? List.of() : history), "AI");
+            try {
+                return new AssistantChatResponse(groqAssistantClient.generateReply(
+                        message,
+                        buildCandidateContext(skills, role, latestCompletedInterview, user.getExperienceLevel()),
+                        history == null ? List.of() : history), "AI");
+            } catch (Exception ex) {
+                log.warn("Groq AI assistant call failed: {}. Falling back to built-in coaching.", ex.getMessage());
+            }
         }
 
         return new AssistantChatResponse(buildReply(

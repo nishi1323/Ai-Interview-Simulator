@@ -77,7 +77,7 @@ public class ResumeService {
 
         try {
             resumeAnalysisRepository.save(document);
-        } catch (DataAccessException exception) {
+        } catch (DataAccessException | com.mongodb.MongoException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Resume analysis storage is unavailable.", exception);
         }
         return savedResume;
@@ -94,7 +94,7 @@ public class ResumeService {
         try {
             document = resumeAnalysisRepository.findById(resume.getAnalysisDocumentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Resume analysis not found: " + resumeId));
-        } catch (DataAccessException exception) {
+        } catch (DataAccessException | com.mongodb.MongoException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Resume analysis storage is unavailable.", exception);
         }
         Map<String, Object> analysis = document.getAnalysis();

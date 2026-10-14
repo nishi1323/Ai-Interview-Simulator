@@ -125,4 +125,32 @@ class AssistantServiceTest {
                 .contains("AI provider is not configured")
                 .doesNotContain("What would you like to work on?");
     }
+
+    @Test
+    void fallsBackToBuiltInCoachingWhenGroqAssistantClientFails() {
+        UserRepository userRepository = mock(UserRepository.class);
+        ResumeRepository resumeRepository = mock(ResumeRepository.class);
+        InterviewRepository interviewRepository = mock(InterviewRepository.class);
+        GroqAssistantClient groqAssistantClient = mock(GroqAssistantClient.class);
+        User user = new User();
+        user.setName("Taylor Candidate");
+        user.setEmail("taylor@example.test");
+        String question = "Explain dependency injection in Spring";
+
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(resumeRepository.findFirstByUserOrderByCreatedAtDesc(user)).thenReturn(Optional.empty());
+        when(interviewRepository.findByUser(user)).thenReturn(List.of());
+        when(groqAssistantClient.isEnabled()).thenReturn(true);
+        when(groqAssistantClient.generateReply(eq(question), contains("Software Engineer"), eq(List.of())))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_GATEWAY, "Groq error"));
+
+        AssistantService service = new AssistantService(
+                userRepository, resumeRepository, interviewRepository, new AiService(), groqAssistantClient);
+
+        AssistantChatResponse reply = service.respond(user.getEmail(), question, List.of());
+
+        assertThat(reply.mode()).isEqualTo("BUILT_IN");
+        assertThat(reply.reply()).contains("AI provider is not configured");
+    }
 }
