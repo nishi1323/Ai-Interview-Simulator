@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createInterview } from '../services/api';
 
+const roleOptions = [
+  'Java Developer',
+  'Full Stack Developer',
+  'Backend Developer',
+  'Frontend Developer',
+  'Software Engineer',
+  'Data Analyst',
+];
+
 export default function InterviewConfigPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -28,7 +37,7 @@ export default function InterviewConfigPage() {
       const response = await createInterview(form);
       navigate(`/interview-room/${response.data.id}`);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || 'Could not create your interview. Please try again.');
+      setError(requestError.response?.data?.message || 'Could not configure and start your interview. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -36,47 +45,78 @@ export default function InterviewConfigPage() {
 
   return (
     <div className="page-shell">
-      <div className="page-header">
+      <header className="page-header">
         <div>
-          <span className="eyebrow">Interview setup</span>
-          <h2>Configure your next mock interview</h2>
+          <span className="eyebrow">Simulation Setup</span>
+          <h2>Configure Mock Interview</h2>
+          <p style={{ margin: '6px 0 0' }}>Select your target engineering role, difficulty, format, and number of questions to begin.</p>
         </div>
-      </div>
+      </header>
 
-      <form className="card panel form-grid" onSubmit={startInterview}>
+      <form className="card panel form-grid" onSubmit={startInterview} style={{ maxWidth: '820px' }}>
         <label>
-          Job role
+          Target Job Role
           <select name="jobRole" value={form.jobRole} onChange={updateField}>
-            <option>Java Developer</option><option>Full Stack Developer</option><option>Backend Developer</option><option>Frontend Developer</option><option>Software Engineer</option><option>Data Analyst</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>{role}</option>
+            ))}
           </select>
         </label>
+
         <label>
-          Interview type
+          Interview Type
           <select name="interviewType" value={form.interviewType} onChange={updateField}>
-            <option>Technical</option><option>HR</option><option>Behavioral</option><option>Mixed</option>
+            <option value="Technical">Technical (Architecture & Coding)</option>
+            <option value="HR">HR & Cultural Fit</option>
+            <option value="Behavioral">Behavioral (STAR Method)</option>
+            <option value="Mixed">Mixed Comprehensive</option>
           </select>
         </label>
+
         <label>
-          Difficulty
+          Experience & Difficulty
           <select name="difficulty" value={form.difficulty} onChange={updateField}>
-            <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+            <option value="Beginner">Entry Level / Junior</option>
+            <option value="Intermediate">Mid-Level / Intermediate</option>
+            <option value="Advanced">Senior / Staff / Lead</option>
           </select>
         </label>
+
         <label>
-          Questions
+          Question Count
           <select name="totalQuestions" value={form.totalQuestions} onChange={updateField}>
-            <option value={5}>5 Questions</option><option value={10}>10 Questions</option><option value={15}>15 Questions</option>
+            <option value={5}>5 Questions (~10 mins)</option>
+            <option value={10}>10 Questions (~20 mins)</option>
+            <option value={15}>15 Questions (~30 mins)</option>
           </select>
         </label>
-        <label>
-          Mode
+
+        <label style={{ gridColumn: 'span 2' }}>
+          Response Format
           <select name="mode" value={form.mode} onChange={updateField}>
-            <option>Text</option><option>Voice</option>
+            <option value="Text">Written / Keyboard Mode</option>
+            <option value="Voice">Spoken / Voice Mode</option>
           </select>
         </label>
-        {error && <p className="alert error" role="alert">{error}</p>}
+
+        {error && (
+          <div style={{ gridColumn: 'span 2' }}>
+            <p className="alert error" role="alert">{error}</p>
+          </div>
+        )}
+
         <button className="primary-btn" type="submit" disabled={submitting}>
-          {submitting ? 'Creating interview…' : 'Start interview'}
+          {submitting ? (
+            'Generating Tailored Questions…'
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="10 8 16 12 10 16 10 8" />
+              </svg>
+              Start Mock Interview
+            </>
+          )}
         </button>
       </form>
     </div>
