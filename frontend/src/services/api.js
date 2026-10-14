@@ -21,6 +21,9 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 
@@ -46,9 +49,7 @@ export const analyzeSpeech = (transcript, durationSeconds) => api.post('/ai/anal
 export const uploadResume = (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  return api.post('/resume/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  return api.post('/resume/upload', formData);
 };
 export const getResume = (id) => api.get(`/resume/${id}`);
 export const createInterview = (payload) => api.post('/interviews', payload);

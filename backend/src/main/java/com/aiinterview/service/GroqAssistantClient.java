@@ -75,8 +75,20 @@ public class GroqAssistantClient {
                     .body(request)
                     .retrieve()
                     .onStatus(status -> status.isError(), (httpRequest, clientResponse) -> {
-                        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                                "The AI assistant provider returned an error.");
+                        int code = clientResponse.getStatusCode().value();
+                        if (code == 401) {
+                            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                                    "Groq API key is invalid or revoked (HTTP 401).");
+                        } else if (code == 403) {
+                            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                                    "Groq API access forbidden (HTTP 403).");
+                        } else if (code == 429) {
+                            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                                    "Groq rate limit exceeded (HTTP 429). Please wait a moment.");
+                        } else {
+                            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                                    "Groq returned error HTTP " + code + ".");
+                        }
                     })
                     .body(ChatCompletionResponse.class);
 
@@ -92,6 +104,51 @@ public class GroqAssistantClient {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Could not reach the AI assistant provider.", exception);
         }
+    }
+
+    public Map<String, Object> checkStatus() {
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("provider", "Groq");
+        result.put("model", model);
+        result.put("configured", isEnabled());
+        if (!isEnabled()) {
+            result.put("status", "MISSING_API_KEY");
+            result.put("message", "GROQ_API_KEY environment variable is not configured or empty.");
+            return result;
+        }
+
+        try {
+            Map<String, Object> testRequest = Map.of(
+                    "model", model,
+                    "max_tokens", 1,
+                    "messages", List.of(Map.of("role", "user", "content", "ping"))
+            );
+            restClient.post()
+                    .uri("/chat/completions")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .body(testRequest)
+                    .retrieve()
+                    .onStatus(status -> status.isError(), (req, res) -> {
+                        int code = res.getStatusCode().value();
+                        if (code == 401) {
+                            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_API_KEY (HTTP 401)");
+                        } else if (code == 429) {
+                            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED (HTTP 429)");
+                        } else {
+                            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "HTTP_" + code);
+                        }
+                    })
+                    .toBodilessEntity();
+            result.put("status", "CONNECTED");
+            result.put("message", "Groq API key is valid and connection was verified.");
+        } catch (ResponseStatusException rse) {
+            result.put("status", rse.getReason());
+            result.put("message", "Groq API returned: " + rse.getReason());
+        } catch (Exception ex) {
+            result.put("status", "CONNECTION_ERROR");
+            result.put("message", "Could not reach Groq: " + ex.getMessage());
+        }
+        return result;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

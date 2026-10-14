@@ -27,6 +27,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ResumeService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ResumeService.class);
+
     private final ResumeRepository resumeRepository;
     private final UserRepository userRepository;
     private final ResumeAnalysisRepository resumeAnalysisRepository;
@@ -67,18 +69,38 @@ public class ResumeService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded file is not a readable PDF.", e);
         }
 
+        Map<String, Object> analysis = aiService.analyzeResume(resume);
+        if (analysis.get("skills") instanceof List<?> skillsList) {
+            resume.setSkills(skillsList.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(", ")));
+        }
+        if (analysis.get("education") instanceof String edu) {
+            resume.setEducation(edu.length() > 2000 ? edu.substring(0, 2000) : edu);
+        }
+        if (analysis.get("experience") instanceof String exp) {
+            resume.setExperience(exp.length() > 2000 ? exp.substring(0, 2000) : exp);
+        }
+        if (analysis.get("projects") instanceof List<?> projList) {
+            String projects = projList.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining("; "));
+            resume.setProjects(projects.length() > 2000 ? projects.substring(0, 2000) : projects);
+        }
+        if (analysis.get("certifications") instanceof List<?> certList) {
+            String certs = certList.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining("; "));
+            resume.setCertifications(certs.length() > 2000 ? certs.substring(0, 2000) : certs);
+        }
+
         Resume savedResume = resumeRepository.save(resume);
         ResumeAnalysisDocument document = new ResumeAnalysisDocument();
         document.setId(savedResume.getAnalysisDocumentId());
         document.setResumeId(savedResume.getId());
         document.setUserId(user.getId());
         document.setFilename(savedResume.getFilename());
-        document.setAnalysis(aiService.analyzeResume(savedResume));
+        document.setAnalysis(analysis);
 
         try {
             resumeAnalysisRepository.save(document);
         } catch (DataAccessException | com.mongodb.MongoException exception) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Resume analysis storage is unavailable.", exception);
+            log.warn("MongoDB resume analysis storage failed for resume {}: {}. Relational resume data is preserved.",
+                    savedResume.getId(), exception.getMessage());
         }
         return savedResume;
     }
@@ -90,14 +112,20 @@ public class ResumeService {
         if (!resume.getUser().getEmail().equals(email)) {
             throw new AccessDeniedException("Resume does not belong to the current user");
         }
-        ResumeAnalysisDocument document;
+        Map<String, Object> analysis = null;
         try {
-            document = resumeAnalysisRepository.findById(resume.getAnalysisDocumentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Resume analysis not found: " + resumeId));
+            ResumeAnalysisDocument document = resumeAnalysisRepository.findById(resume.getAnalysisDocumentId())
+                    .orElse(null);
+            if (document != null && document.getAnalysis() != null) {
+                analysis = document.getAnalysis();
+            }
         } catch (DataAccessException | com.mongodb.MongoException exception) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Resume analysis storage is unavailable.", exception);
+            log.warn("MongoDB unavailable when retrieving resume analysis {}: {}",
+                    resume.getAnalysisDocumentId(), exception.getMessage());
         }
-        Map<String, Object> analysis = document.getAnalysis();
+        if (analysis == null) {
+            analysis = aiService.analyzeResume(resume);
+        }
         return new ResumeResponse(resume.getId(), resume.getFilename(), resume.getCreatedAt(), analysis);
     }
 
