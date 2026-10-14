@@ -10,6 +10,9 @@ ai-service/.pytest_cache/
 ai-service/*.pyc
 
 # Node
+node_modules/
+dist/
+.vite/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
