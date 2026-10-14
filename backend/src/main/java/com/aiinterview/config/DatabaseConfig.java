@@ -77,7 +77,21 @@ public class DatabaseConfig {
             dataSource.setMinimumIdle(1);
             dataSource.setIdleTimeout(30000);
             dataSource.setMaxLifetime(600000);
-            dataSource.setConnectionTimeout(20000);
+            dataSource.setConnectionTimeout(30000);
+            dataSource.setInitializationFailTimeout(60000);
+        }
+
+        // DNS pre-resolution diagnostic
+        try {
+            String stripped = parsed.jdbcUrl().replace("jdbc:postgresql://", "http://").split("\\?")[0];
+            URI targetUri = URI.create(stripped);
+            String host = targetUri.getHost();
+            if (host != null && !host.equals("localhost")) {
+                java.net.InetAddress addr = java.net.InetAddress.getByName(host);
+                log.info("DNS resolved database host '{}' to [{}]", host, addr.getHostAddress());
+            }
+        } catch (Exception ex) {
+            log.warn("DNS check for database host had a notice: {}. HikariCP will proceed with configured retries.", ex.getMessage());
         }
 
         log.info("Initialized DataSource for target: {}", maskUrl(parsed.jdbcUrl()));
