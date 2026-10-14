@@ -1,7 +1,7 @@
 
 import { useState } from "react"
 import "./Register.css"
-import axios from "axios"
+import { BACKEND_URL } from "../services/api"
 import { useNavigate } from "react-router-dom"
 function Login(){
 
@@ -18,7 +18,7 @@ const navigate=useNavigate()
 
     async function submit(){
              try{
-                const response=  await axios.post(`http://localhost:8080/login`,loginUser)
+                const response=  await axios.post(`${BACKEND_URL}/login`,loginUser)
                 localStorage.setItem("token",response.data)
              alert("User Login Successfull")
              navigate("/dashboard")

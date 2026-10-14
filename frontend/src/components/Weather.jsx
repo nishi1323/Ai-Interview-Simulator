@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { BACKEND_URL } from "../services/api";
 
 function Weather() {
 
@@ -20,7 +21,7 @@ function Weather() {
       setLoading(true);
 
       const response = await axios.get(
-        `http://localhost:8080/city/${city}`
+        `${BACKEND_URL}/city/${city}`
       );
 
       setWeather(response.data);

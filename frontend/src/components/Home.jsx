@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { BACKEND_URL } from "../services/api";
 import "../App.css";
 
 function Home() {
@@ -17,7 +18,7 @@ function Home() {
 
     const interval = setInterval(() => {
       axios
-        .get("http://localhost:8080/verify", {
+        .get(`${BACKEND_URL}/verify`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -48,7 +49,7 @@ function Home() {
   async function getUsers() {
     try {
       const response = await axios.get(
-        "http://localhost:8080/get"
+        `${BACKEND_URL}/get`
       );
 
       console.log(response.data);
@@ -70,7 +71,7 @@ function Home() {
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/get/${searchId}`
+        `${BACKEND_URL}/get/${searchId}`
       );
 
       setUsers([response.data]);
@@ -94,7 +95,7 @@ function Home() {
   async function updateUser() {
     try {
       await axios.put(
-        `http://localhost:8080/update/${id}`,
+        `${BACKEND_URL}/update/${id}`,
         {
           name: name,
           email: email,
@@ -121,7 +122,7 @@ function Home() {
   async function deleteUser(id) {
     try {
       await axios.delete(
-        `http://localhost:8080/delete/${id}`
+        `${BACKEND_URL}/delete/${id}`
       );
 
       alert("User Deleted Successfully");

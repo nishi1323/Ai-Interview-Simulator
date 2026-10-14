@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../services/api";
 
 function Sms() {
   const [phone, setPhone] = useState("");
@@ -7,7 +8,7 @@ function Sms() {
   const sendSms = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8080/api/sms/send?phone=${encodeURIComponent(phone)}&message=${encodeURIComponent(message)}`,
+        `${API_BASE_URL}/sms/send?phone=${encodeURIComponent(phone)}&message=${encodeURIComponent(message)}`,
         {
           method: "POST",
         }

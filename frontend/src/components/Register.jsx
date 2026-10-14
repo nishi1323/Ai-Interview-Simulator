@@ -1,6 +1,6 @@
 import { useState } from "react"
 import "./Register.css"
-import axios from "axios"
+import { BACKEND_URL } from "../services/api"
 import { useNavigate } from "react-router-dom"
 
 function Register(){
@@ -18,7 +18,7 @@ setRegisterUser({...registerUser,[e.target.name]:e.target.value})
 
       async function submit(){
            try{
-                 const response= await axios.post(`http://localhost:8080/register`,registerUser)
+                 const response= await axios.post(`${BACKEND_URL}/register`,registerUser)
          alert("User Registered Successfully")
          navigate("/login")
            }catch(err){
